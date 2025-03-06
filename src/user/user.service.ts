@@ -6,6 +6,8 @@ import { CreateUserDto } from "./dto/createUser.dto";
 import { UserEntity } from "@app/user/user.entity";
 import { JWT_SECRET } from "@app/config";
 import { UserResponseInterface } from "@app/user/types/userResponse.interface";
+import { LoginUserDto } from "@app/user/dto/loginUser.dto";
+import { compare } from "bcrypt";
 
 @Injectable()
 export class UserService {
@@ -22,6 +24,24 @@ export class UserService {
         const newUser = new UserEntity();
         Object.assign(newUser, createUserDto);
         return this.userRepository.save(newUser);
+    }
+
+    async loginUser(loginUserDto: LoginUserDto): Promise<UserEntity> {
+        const user = await this.userRepository.findOne({ where: { email: loginUserDto.email }, 
+            select: ['id', 'email', 'username', 'bio', 'password']
+        });
+
+        if (!user) {
+            throw new HttpException('No user with that credentials', HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        const passwordIsCorrect = await compare(loginUserDto.password, user.password);
+
+        if (!passwordIsCorrect) {
+            throw new HttpException('Credentials are invalid', HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        delete user.password;
+        return user;
     }
 
     generateJwt(user: UserEntity): string {
