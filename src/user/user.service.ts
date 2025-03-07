@@ -44,6 +44,14 @@ export class UserService {
         return user;
     }
 
+    async findById(id: number): Promise<UserEntity> {
+        const user = await this.userRepository.findOne({ where: { id }});
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        return user;
+    }
+
     generateJwt(user: UserEntity): string {
         return sign({
             id: user.id,
